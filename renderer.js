@@ -121,9 +121,11 @@ function generateChart() {
             backgroundColor: colors[i % colors.length].background,
             yAxisID: axisId,
             fill: false,
-            tension: 0.1
+            tension: 0.1,
+            pointRadius: 0,
         };
     });
+
 
     if (chartInstance) chartInstance.destroy();
     const ctx = document.getElementById('myChart').getContext('2d');
@@ -157,13 +159,22 @@ function generateChart() {
         type: 'line',
         data: { datasets },
         options: {
+            animation: false,
             responsive: true,
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { position: 'top' },
+                decimation: { enabled: true, algorithm: 'min-max', samples: 2000 },
                 zoom: {
-                    pan: { enabled: true, mode: 'xy' },
-                    zoom: { drag: { enabled: true }, wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }
+                    pan: {
+                        enabled: true,      // <-- allow panning
+                        mode: 'xy',         // pan both axes
+                        modifierKey: null,  // allow grab without pressing a key
+                        threshold: 5,         // minimal drag distance in pixels
+                        mouseButtons: [1] // 0=left, 1=middle, 2=right
+
+                    },
+                    zoom: { drag: { enabled: true }, wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
                 }
             },
             scales: scales

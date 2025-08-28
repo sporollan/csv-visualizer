@@ -1,39 +1,19 @@
 {
-  "name": "csv-plotter",
+  "name": "csv-visualizer",
   "version": "1.0.0",
-  "description": "A powerful CSV plotting application with multi-axis support",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
-    "dist": "electron-builder --publish=never"
+    "dist": "electron-builder"
   },
-  "keywords": ["csv", "plotting", "electron", "charts", "data-visualization"],
-  "author": "Your Name",
-  "license": "MIT",
   "devDependencies": {
-    "electron": "^22.0.0",
-    "electron-builder": "^24.0.0"
+    "electron": "^25.0.0",
+    "electron-builder": "^24.6.0"
   },
   "build": {
-    "appId": "com.yourname.csv-plotter",
-    "productName": "CSV Plotter",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "main.js",
-      "index.html",
-      "package.json"
-    ],
-    "mac": {
-      "category": "public.app-category.productivity"
-    },
+    "appId": "com.yourname.csvvisualizer",
     "win": {
       "target": "nsis"
-    },
-    "linux": {
-      "target": "AppImage"
     }
   }
 }
