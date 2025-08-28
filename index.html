@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Plotter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f8fafc;
+            min-height: 100vh;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 24px 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        
+        .subtitle {
+            margin-top: 8px;
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .control-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .control-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e1;
+        }
+        
+        .control-card h3 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            width: 100%;
+        }
+        
+        button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.6;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        .button-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        
+        .button-secondary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+        }
+        
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            color: #374151;
+            font-size: 14px;
+            margin: 8px 0 16px 0;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .axis-config {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .axis-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .axis-item label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .color-indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .chart-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .zoom-info {
+            font-size: 12px;
+            color: #64748b;
+            margin-right: 12px;
+        }
+        
+        #chart-container {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-height: 500px;
+        }
+        
+        #myChart {
+            height: 500px !important;
+        }
+        
+        .file-info {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            color: #0369a1;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+        
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #16a34a;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+        
+        .status {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 32px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        @media (max-width: 1024px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 16px;
+            }
+            
+            .header-content {
+                padding: 0 16px;
+            }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 CSV Multi-Axis Plotter</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <h3>📁 File Control</h3>
+                <button id="loadFile">Load CSV File</button>
+                <div id="fileInfo"></div>
+            </div>
+            
+            <div class="control-group">
+                <h3>📊 X-Axis Configuration</h3>
+                <label for="xAxis">X-Axis Column:</label>
+                <select id="xAxis">
+                    <option value="">Select X-axis column...</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <h3>📈 Y-Axis Configuration</h3>
+                <div class="axis-config">
+                    <div class="axis-item">
+                        <label><span class="color-indicator" style="background-color: #ff6384;"></span>Y-Axis 1:</label>
+                        <select id="yAxis1">
+                            <option value="">Select column...</option>
+                        </select>
+                    </div>
+                    <div class="axis-item">
+                        <label><span class="color-indicator" style="background-color: #36a2eb;"></span>Y-Axis 2:</label>
+                        <select id="yAxis2">
+                            <option value="">Select column...</option>
+                        </select>
+                    </div>
+                    <div class="axis-item">
+                        <label><span class="color-indicator" style="background-color: #cc65fe;"></span>Y-Axis 3:</label>
+                        <select id="yAxis3">
+                            <option value="">Select column...</option>
+                        </select>
+                    </div>
+                    <div class="axis-item">
+                        <label><span class="color-indicator" style="background-color: #ffce56;"></span>Y-Axis 4:</label>
+                        <select id="yAxis4">
+                            <option value="">Select column...</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="plotChart" disabled>🚀 Generate Chart</button>
+            </div>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="chart-container" style="display: none;">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+    <button id="resetZoom">Reset Zoom</button>
+    <script src="./renderer.js"></script>
+</body>
+</html>
