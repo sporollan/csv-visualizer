@@ -1,6 +1,6 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
-const path = require('path');
-const fs = require('fs');
+const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const fs = require("fs");
+const path = require("path");
 
 let mainWindow;
 
@@ -9,51 +9,35 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false
     }
   });
 
-  mainWindow.loadFile('index.html');
-  
-  // Open DevTools in development
-  // mainWindow.webContents.openDevTools();
-}
-
-// Handle file selection
-ipcMain.handle('select-csv-file', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile'],
-    filters: [
-      { name: 'CSV Files', extensions: ['csv'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
-  });
-
-  if (!result.canceled && result.filePaths.length > 0) {
-    const filePath = result.filePaths[0];
-    try {
-      const csvData = fs.readFileSync(filePath, 'utf8');
-      return { success: true, data: csvData, fileName: path.basename(filePath) };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+  } else {
+    mainWindow.loadFile(path.join(__dirname, "dist/index.html"));
   }
-  
-  return { success: false, error: 'No file selected' };
-});
+}
 
 app.whenReady().then(createWindow);
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+ipcMain.handle("select-csv-file", async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    filters: [{ name: "CSV Files", extensions: ["csv"] }],
+    properties: ["openFile"]
+  });
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+  if (canceled || filePaths.length === 0) {
+    return { success: false, error: "No file selected" };
+  }
+
+  try {
+    const data = fs.readFileSync(filePaths[0], "utf-8");
+    return { success: true, data, fileName: path.basename(filePaths[0]) };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 });
