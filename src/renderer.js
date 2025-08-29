@@ -1,5 +1,4 @@
-// renderer.js
-console.log("✅ Renderer loaded");
+console.log("Renderer loaded");
 
 const isElectron = !!window.electronAPI;
 
@@ -16,10 +15,10 @@ let csvData = null;
 let chartInstance = null;
 
 const colors = [
-    { border: '#3b82f6', background: '#3b82f640' },
-    { border: '#ef4444', background: '#ef444440' },
-    { border: '#10b981', background: '#10b98140' },
-    { border: '#f59e0b', background: '#f59e0b40' }
+    { border: '#ff0037', background: '#ff0037' },
+    { border: '#1dc942ff', background: '#1dc942ff' },
+    { border: '#a73addff', background: '#a73addff' },
+    { border: '#4f0272', background: '#4f0272' }
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -204,7 +203,7 @@ function generateChart() {
                 decimation: { enabled: true, algorithm: 'min-max', samples: 2000 },
                 zoom: {
                     pan: {
-                        enabled: true,      // <-- allow panning
+                        enabled: true,      // allow panning
                         mode: 'xy',         // pan both axes
                         modifierKey: null,  // allow grab without pressing a key
                         threshold: 5,         // minimal drag distance in pixels
@@ -227,5 +226,5 @@ function generateChart() {
 
 function showError(msg) {
     document.getElementById('fileInfo').innerHTML =
-        `<div class="error">❌ ${msg}</div>`;
+        `<div class="error">${msg}</div>`;
 }
