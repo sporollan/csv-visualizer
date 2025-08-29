@@ -111,6 +111,12 @@ function populateColumnSelectors() {
             const opt = document.createElement('option');
             opt.value = field.trim();
             opt.textContent = field.trim();
+            if (field.trim().toLowerCase() === "time" && id ==="xAxis") opt.selected = true;
+
+            if (field.trim().toLowerCase() === "treating pressure" && id ==="yAxis1") opt.selected = true;
+            if (field.trim().toLowerCase() === "slurry rate" && id ==="yAxis2") opt.selected = true;
+            if (field.trim().toLowerCase() === "slurry proppant conc" && id ==="yAxis3") opt.selected = true;
+            if (field.trim().toLowerCase() === "bh proppant conc" && id ==="yAxis4") opt.selected = true;
             sel.appendChild(opt);
         });
     });
