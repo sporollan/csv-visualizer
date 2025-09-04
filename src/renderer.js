@@ -8,7 +8,7 @@ if (isElectron) {
     console.log("Got reply:", data);
   });
 } else {
-  console.log("🌐 Running in browser mode (no Electron IPC)");
+  console.log("Running in browser mode (no Electron IPC)");
 }
 
 let csvData = null;
@@ -53,7 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (result.success) {
-            // same CSV parsing logic as before…
             const lines = result.data.split(/\r?\n/);
             const headerIndex = lines.findIndex(l => l.startsWith('"Time"') || l.startsWith("Time,"));
             if (headerIndex === -1) throw new Error("Could not find 'Time' header in CSV");
@@ -73,6 +72,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 Rows: ${csvData.data.length}<br>
                 Columns: ${csvData.meta.fields.length}
             </div>`;
+            document.getElementById("chartInfo").innerHTML = `
+            <div class="file-info">
+                <strong>📄 ${result.fileName}</strong><br>
+            </div>`;
             plotButton.disabled = false;
         } else {
             showError(result.error);
@@ -82,6 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } finally {
         loadButton.innerHTML = "Load CSV File";
         loadButton.disabled = false;
+        generateChart();
         }
     });
 
@@ -120,6 +124,36 @@ function populateColumnSelectors() {
         });
     });
 }
+
+function updateAxis(axisNumber) {
+  const minValue = parseFloat(document.getElementById(`y${axisNumber}Min`).value);
+  const maxValue = parseFloat(document.getElementById(`y${axisNumber}Max`).value);
+
+  const scale = chartInstance.options.scales[`y${axisNumber}`];
+  scale.min = isNaN(minValue) ? undefined : minValue;
+  scale.max = isNaN(maxValue) ? undefined : maxValue;
+
+  chartInstance.update();
+}
+
+function resetAxis(axisNumber) {
+  document.getElementById(`y${axisNumber}Min`).value = "";
+  document.getElementById(`y${axisNumber}Max`).value = "";
+
+  const scale = chartInstance.options.scales[`y${axisNumber}`];
+  scale.min = undefined;
+  scale.max = undefined;
+
+  chartInstance.update();
+}
+
+const axes = [1, 2, 3, 4];
+
+axes.forEach(axisNumber => {
+  document.getElementById(`y${axisNumber}Min`).addEventListener("input", () => updateAxis(axisNumber));
+  document.getElementById(`y${axisNumber}Max`).addEventListener("input", () => updateAxis(axisNumber));
+  document.getElementById(`resetAxis${axisNumber}`).addEventListener("click", () => resetAxis(axisNumber));
+});
 
 function generateChart() {
     const xColumn = document.getElementById('xAxis').value;
@@ -203,7 +237,7 @@ function generateChart() {
                 decimation: { enabled: true, algorithm: 'min-max', samples: 2000 },
                 zoom: {
                     pan: {
-                        enabled: true,      // allow panning
+                        enabled: false,      // allow panning
                         mode: 'xy',         // pan both axes
                         modifierKey: null,  // allow grab without pressing a key
                         threshold: 5,         // minimal drag distance in pixels
