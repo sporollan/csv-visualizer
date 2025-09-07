@@ -51,7 +51,6 @@
         
         .chart-control-container {
             display: flex;
-            grid-template-columns: 160px 1fr;
             gap: 32px;
             margin-bottom: 32px;
         }
@@ -290,6 +289,10 @@
         #myChart {
             height: 550px !important;
         }
+
+        .data-controls-main-container {
+            display: block;
+        }
         
         .file-info {
             background: #f0f9ff;
@@ -344,6 +347,18 @@
             .header-content {
                 padding: 0 16px;
             }
+
+            .axis-controls-main-container {
+                align-items: center;;
+                width: 40%;
+            }
+            .chart-control-container {
+                flex-direction: column;
+            }
+            .axis-controls {
+                width: 100%;
+            }
+            
         }
         
         .loading {

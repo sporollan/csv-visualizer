@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,26 +14,36 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <link rel="stylesheet" href="/index.styles.css">
 </head>
+
 <body>
     <div class="container">
         <h1> CSV Multi-Axis Plotter</h1>
-        
         <div class="fileload-controls-container">
-            <div class="control-group">
+            <div class="files-left-container">
                 <h3> File Control</h3>
-                <button id="loadFile">Load CSV File</button>
+                <button id="loadFile">Load zip/csv Files</button>
             </div>
-            <div id="status" class="status"></div>
-            <div id="fileInfo"></div>
+            <div class="files-right-container">
+                <div id="loaded-files"></div>
+                <button id="add-file" hidden>add</button>
+            </div>
         </div>
 
         <div class="chart-control-container">
             <div class="axis-controls-main-container">
-                <h3> Axis Control </h3>
+                <h3> Chart Control </h3>
                 <div class="axis-controls">
                     <div class="axis-item">
                         <div class="axis-select">
-                            <label><span class="color-indicator" style="background-color: #ffffff00;"></span>X: </label>
+                            <label for="fileSelector">File:</label>
+                            <select id="fileSelector">
+                                <option value="">...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="axis-item">
+                        <div class="axis-select">
+                            <label>X: </label>
                             <select id="xAxis">
                                 <option value="">...</option>
                             </select>
@@ -40,59 +51,85 @@
                     </div>
                     <div class="axis-item">
                         <div class="axis-select">
-                            <label><span class="color-indicator" style="background-color: #ff0037;"></span>Y1: </label>
+                            <label>Y1: </label>
                             <select id="yAxis1">
                                 <option value="">...</option>
                             </select>
                         </div>
                         <div class="axis-limits">
-                            <label>min: <input class="axis-input" id="y1Min" type="text"  autocomplete="off" spellcheck="false"></label>
-                            <label>max: <input class="axis-input" id="y1Max" type="text"  autocomplete="off" spellcheck="false"></label>
+                            <label>min: <input class="axis-input" id="y1Min" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
+                            <label>max: <input class="axis-input" id="y1Max" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
                             <button id="resetAxis1">Reset</button>
                         </div>
                     </div>
                     <div class="axis-item">
                         <div class="axis-select">
-                            <label><span class="color-indicator" style="background-color: #1dc942ff;"></span>Y2: </label>
+                            <label>Y2:
+                            </label>
                             <select id="yAxis2">
                                 <option value="">...</option>
                             </select>
                         </div>
                         <div class="axis-limits">
-                            <label>min: <input class="axis-input" id="y2Min" type="text"  autocomplete="off" spellcheck="false"></label>
-                            <label>max: <input class="axis-input" id="y2Max" type="text"  autocomplete="off" spellcheck="false"></label>
+                            <label>min: <input class="axis-input" id="y2Min" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
+                            <label>max: <input class="axis-input" id="y2Max" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
                             <button id="resetAxis2">Reset</button>
                         </div>
                     </div>
                     <div class="axis-item">
                         <div class="axis-select">
-                            <label><span class="color-indicator" style="background-color: #a73addff;"></span>Y3: </label>
+                            <label>Y3:
+                            </label>
                             <select id="yAxis3">
                                 <option value="">...</option>
                             </select>
                         </div>
                         <div class="axis-limits">
-                            <label>min: <input class="axis-input" id="y3Min" type="text"  autocomplete="off" spellcheck="false"></label>
-                            <label>max: <input class="axis-input" id="y3Max" type="text"  autocomplete="off" spellcheck="false"></label>
+                            <label>min: <input class="axis-input" id="y3Min" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
+                            <label>max: <input class="axis-input" id="y3Max" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
                             <button id="resetAxis3">Reset</button>
                         </div>
                     </div>
                     <div class="axis-item">
                         <div class="axis-select">
-                            <label><span class="color-indicator" style="background-color: #4f0272;"></span>Y4: </label>
+                            <label>Y4: </label>
                             <select id="yAxis4">
                                 <option value="">...</option>
                             </select>
                         </div>
                         <div class="axis-limits">
-                            <label>min: <input class="axis-input" id="y4Min" type="text" autocomplete="off" spellcheck="false"></label>
-                            <label>max: <input class="axis-input" id="y4Max" type="text" autocomplete="off" spellcheck="false"></label>
+                            <label>min: <input class="axis-input" id="y4Min" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
+                            <label>max: <input class="axis-input" id="y4Max" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
                             <button id="resetAxis4">Reset</button>
                         </div>
                     </div>
+                    <div class="axis-item">
+                        <div class="axis-select">
+                            <label>Y5: </label>
+                            <select id="yAxis5">
+                                <option value="">...</option>
+                            </select>
+                        </div>
+                        <div class="axis-limits">
+                            <label>min: <input class="axis-input" id="y5Min" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
+                            <label>max: <input class="axis-input" id="y5Max" type="text" autocomplete="off"
+                                    spellcheck="false"></label>
+                            <button id="resetAxis5">Reset</button>
+                        </div>
+                    </div>
                 </div>
-                <button id="plotChart" disabled> Generate Chart</button>
-                <button id="resetZoom">Reset Zoom</button>
+                <button id="clearChart" disabled>Clear Chart</button>
+                <button id="plotChart" disabled>Generate Chart</button>
+                <button id="resetZoom" disabled>Reset Zoom</button>
             </div>
             <div id="chart-container" style="display: none;">
                 <div>
@@ -103,10 +140,10 @@
                 </div>
             </div>
             <div class="data-controls-main-container">
-                <h3> Display Container</h3>
             </div>
         </div>
     </div>
     <script type="module" src="/src/renderer.js"></script>
 </body>
+
 </html>

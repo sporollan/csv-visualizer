@@ -1,3 +1,5 @@
+import JSZip from "jszip";
+
 console.log("Renderer loaded");
 
 const isElectron = !!window.electronAPI;
@@ -18,8 +20,140 @@ const colors = [
     { border: '#ff0037', background: '#ff0037' },
     { border: '#1dc942ff', background: '#1dc942ff' },
     { border: '#a73addff', background: '#a73addff' },
-    { border: '#4f0272', background: '#4f0272' }
+    { border: '#4f0272', background: '#4f0272' },
+    { border: '#ff7f0e', background: '#ff7f0e' }
 ];
+
+async function updateFileList() {
+    const loadedFilesDiv = document.getElementById('loaded-files');
+    console.log('Updating loaded files display:', csvFiles.map(f => f.fileName));
+    loadedFilesDiv.innerHTML = csvFiles.map(f => `
+        <div class="file-info">
+            <strong>📄 ${f.fileName}</strong>
+        </div>`).join('');
+    }
+function parseChart1(result) {
+    console.log('Parsing Chart 1 CSV:', result);
+
+    const lines = result.data.split(/\r?\n/);
+
+    const headerIndex = lines.findIndex(l => l.startsWith('"Time"') || l.startsWith("Time,"));
+    if (headerIndex === -1) throw new Error("Could not find 'Time' header in CSV");
+
+    let dataLines = lines.slice(headerIndex);
+
+    dataLines = dataLines.filter(l => {
+        if (l.startsWith('"Time"') || l.startsWith("Time,")) return true;
+
+        if (/,(Event|Stage|Treatment)/i.test(l)) return false;
+
+        return l.split(",").length > 5;
+    });
+
+    const cleanCSV = dataLines.join("\n");
+
+    csvData = Papa.parse(cleanCSV, {
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true
+    });
+
+    const preselectedY = [];
+    if (/FH/i.test(result.fileName)) {
+        preselectedY.push("Treating Pressure", "Slurry Rate", "Slurry Proppant Conc", "BH Proppant Conc", "Backside Pressure");
+    } else if (/PD/i.test(result.fileName)) {
+        preselectedY.push("Treating Pressure", "Slurry Rate", "W1 Line Speed", "W1 Depth", "W1 Surface Line Tension");
+    }
+
+    populateColumnSelectors(preselectedY);
+
+    document.getElementById("chartInfo").innerHTML = `
+    <div class="file-info">
+        <strong>📄 ${result.fileName}</strong><br>
+    </div>`;
+
+    const sel = document.getElementById('fileSelector');
+    sel.value = csvFiles.findIndex(f => f.fileName === result.fileName);
+
+    generateChart();
+}
+
+
+const csvFiles = [];
+
+
+async function handleCsv(result) {
+    console.log('Handling CSV:', result.fileName);
+    try {
+        console.log('Currently loaded files:');
+        console.log(result.fileName);
+        console.log(csvFiles.map(f => f.fileName));
+        if (csvFiles.some(f => f.fileName === result.fileName)) {
+            console.warn('File already loaded:', result.fileName);
+            return;
+        }
+        csvFiles.push(result);
+        updateFileList();
+        populateFileSelector();
+        if (/FH/i.test(result.fileName) && chartInstance === null) {
+            parseChart1(result);
+        } else if (/PD/i.test(result.fileName)) {
+            parseChart1(result);
+        }
+    } catch (error) {
+        console.error('Error reading CSV file:', error);
+        showError('Error reading CSV file: ' + error.message);
+    }
+}
+
+async function handleZip(result) {
+    console.log('Handling ZIP:', result.fileName);
+    try {
+        const csvFiles = [];
+        const jszip = new JSZip();
+        const zip = await jszip.loadAsync(result.data);
+        const zipCsv = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.csv'));
+        console.log('Found CSV files in ZIP:', zipCsv);
+        for (const fileName of zipCsv) {
+            handleCsv({ fileName, data: await zip.files[fileName].async('string') });
+        }
+
+        const zipNested = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.zip'));
+        console.log('Found nested ZIP files in ZIP:', zipNested);
+        for (const fileName of zipNested) {
+            handleZip({ fileName, data: await zip.files[fileName].async('arraybuffer') });
+        }
+
+    } catch (error) {
+        console.error('Error reading ZIP file:', error);
+        showError('Error reading ZIP file: ' + error.message);
+    }
+}
+
+function arrayBufferToString(buffer) {
+    return new TextDecoder("utf-8").decode(buffer);
+}
+
+async function handleLoadedFile(result) {
+    console.log('Handling Loaded:', result.fileName);
+
+    try {
+        const fileExtension = result.fileName.split('.').pop().toLowerCase();
+        if (fileExtension === 'csv') {
+            await handleCsv({
+                fileName: result.fileName,
+                data: arrayBufferToString(result.data)
+            });
+        } else if (fileExtension === 'zip') {
+            await handleZip(result);
+        } else {
+            console.warn('Unsupported file type:', fileExtension);
+        }
+    } catch (error) {
+        console.error('Error reading files:', error);
+        showError('Error reading files: ' + error.message);
+    }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     const loadButton = document.getElementById("loadFile");
@@ -39,56 +173,33 @@ document.addEventListener("DOMContentLoaded", () => {
             // Web fallback: use <input type="file">
             const input = document.createElement("input");
             input.type = "file";
-            input.accept = ".csv";
+            input.multiple = true;
+            input.accept = ".zip,.csv";
             input.click();
 
             result = await new Promise((resolve) => {
             input.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return resolve({ success: false, error: "No file selected" });
-                const text = await file.text();
-                resolve({ success: true, data: text, fileName: file.name });
+
+                const arrayBuffer = await file.arrayBuffer();
+                resolve({ success: true, data: arrayBuffer, fileName: file.name });
             };
             });
         }
-
         if (result.success) {
-            const lines = result.data.split(/\r?\n/);
-            const headerIndex = lines.findIndex(l => l.startsWith('"Time"') || l.startsWith("Time,"));
-            if (headerIndex === -1) throw new Error("Could not find 'Time' header in CSV");
-
-            const cleanCSV = lines.slice(headerIndex).join("\n");
-
-            csvData = Papa.parse(cleanCSV, {
-            header: true,
-            dynamicTyping: true,
-            skipEmptyLines: true
-            });
-
-            populateColumnSelectors();
-            document.getElementById("fileInfo").innerHTML = `
-            <div class="file-info">
-                <strong>📄 ${result.fileName}</strong><br>
-                Rows: ${csvData.data.length}<br>
-                Columns: ${csvData.meta.fields.length}
-            </div>`;
-            document.getElementById("chartInfo").innerHTML = `
-            <div class="file-info">
-                <strong>📄 ${result.fileName}</strong><br>
-            </div>`;
-            plotButton.disabled = false;
+            await handleLoadedFile(result);
         } else {
             showError(result.error);
         }
         } catch (err) {
         showError(err.message);
         } finally {
-        loadButton.innerHTML = "Load CSV File";
-        loadButton.disabled = false;
-        generateChart();
-        }
+            loadButton.innerHTML = "Add More Files";
+            loadButton.disabled = false;
+            plotButton.disabled = false;
+            }
     });
-
 
     // Plot Chart
     plotButton.addEventListener('click', () => {
@@ -103,23 +214,55 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    const clearChartButton = document.getElementById('clearChart');
+
+    clearChartButton.addEventListener('click', () => {
+        ['yAxis2', 'yAxis3', 'yAxis4', 'yAxis5'].forEach(id => {
+            document.getElementById(id).value = "";
+        });
+        generateChart();
+        document.getElementById('chart-container').style.display = 'none';
+    });
+
 });
 
-function populateColumnSelectors() {
-    const selectors = ['xAxis', 'yAxis1', 'yAxis2', 'yAxis3', 'yAxis4'];
+
+
+function populateFileSelector() {
+    const sel = document.getElementById('fileSelector');
+    sel.innerHTML = '<option value="">...</option>';
+    csvFiles.forEach((file, index) => {
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.textContent = file.fileName;
+        sel.appendChild(opt);
+    });
+}
+
+function populateColumnSelectors(preselectedY) {
+    const selectors = ['xAxis', 'yAxis1', 'yAxis2', 'yAxis3', 'yAxis4', 'yAxis5'];
     selectors.forEach(id => {
         const sel = document.getElementById(id);
         sel.innerHTML = '<option value="">Select column...</option>';
         csvData.meta.fields.forEach(field => {
+            const cleanField = field.trim();
             const opt = document.createElement('option');
-            opt.value = field.trim();
-            opt.textContent = field.trim();
-            if (field.trim().toLowerCase() === "time" && id ==="xAxis") opt.selected = true;
+            opt.value = cleanField;
+            opt.textContent = cleanField;
 
-            if (field.trim().toLowerCase() === "treating pressure" && id ==="yAxis1") opt.selected = true;
-            if (field.trim().toLowerCase() === "slurry rate" && id ==="yAxis2") opt.selected = true;
-            if (field.trim().toLowerCase() === "slurry proppant conc" && id ==="yAxis3") opt.selected = true;
-            if (field.trim().toLowerCase() === "bh proppant conc" && id ==="yAxis4") opt.selected = true;
+            // Always preselect "Time" for xAxis
+            if (id === "xAxis" && cleanField.toLowerCase() === "time") {
+                opt.selected = true;
+            }
+
+            // For yAxisN, use the preselectedY array
+            if (id.startsWith("yAxis")) {
+                const yIndex = parseInt(id.replace("yAxis", ""), 10) - 1; // yAxis1 -> index 0
+                if (preselectedY[yIndex] && cleanField.toLowerCase() === preselectedY[yIndex].toLowerCase()) {
+                    opt.selected = true;
+                }
+            }
+
             sel.appendChild(opt);
         });
     });
@@ -147,21 +290,29 @@ function resetAxis(axisNumber) {
   chartInstance.update();
 }
 
-const axes = [1, 2, 3, 4];
+document.getElementById('fileSelector').addEventListener('change', (e) => {
+    console.log('File selector changed:', e.target.value);
+    parseChart1(csvFiles[e.target.value]);
+});
+
+const axes = [1, 2, 3, 4, 5];
 
 axes.forEach(axisNumber => {
-  document.getElementById(`y${axisNumber}Min`).addEventListener("input", () => updateAxis(axisNumber));
-  document.getElementById(`y${axisNumber}Max`).addEventListener("input", () => updateAxis(axisNumber));
-  document.getElementById(`resetAxis${axisNumber}`).addEventListener("click", () => resetAxis(axisNumber));
+    document.getElementById(`yAxis${axisNumber}`).addEventListener("change", () => generateChart());
+    document.getElementById(`y${axisNumber}Min`).addEventListener("input", () => updateAxis(axisNumber));
+    document.getElementById(`y${axisNumber}Max`).addEventListener("input", () => updateAxis(axisNumber));
+    document.getElementById(`resetAxis${axisNumber}`).addEventListener("click", () => resetAxis(axisNumber));
 });
 
 function generateChart() {
+    console.log('Generating chart with data:', csvData);
     const xColumn = document.getElementById('xAxis').value;
     const yColumns = [
         document.getElementById('yAxis1').value,
         document.getElementById('yAxis2').value,
         document.getElementById('yAxis3').value,
-        document.getElementById('yAxis4').value
+        document.getElementById('yAxis4').value,
+        document.getElementById('yAxis5').value
     ].filter(Boolean);
 
     if (!xColumn || yColumns.length === 0) {
@@ -253,12 +404,15 @@ function generateChart() {
 
     document.getElementById('chart-container').style.display = 'block';
     document.getElementById('resetZoom').disabled = false;
+    document.getElementById('clearChart').disabled = false;
 }
 
 
 
 
 function showError(msg) {
-    document.getElementById('fileInfo').innerHTML =
+    /*
+    document.getElementById('chartInfoError').innerHTML =
         `<div class="error">${msg}</div>`;
+    */
 }
