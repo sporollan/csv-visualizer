@@ -46,13 +46,14 @@
             display: grid;
             grid-template-columns: 320px 1fr;
             gap: 32px;
-            margin-bottom: 32px;
+            margin: 16px 0 86px 0;
         }
         
         .chart-control-container {
             display: flex;
             gap: 32px;
             margin-bottom: 32px;
+            margin-right: 224px;
         }
         
         .axis-controls-main-container {
@@ -284,10 +285,11 @@
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
             flex: 1;
             min-height: 550px;
+            width: 100%;
         }
         
         #myChart {
-            height: 550px !important;
+            width:100%;
         }
 
         .data-controls-main-container {
@@ -354,6 +356,7 @@
             }
             .chart-control-container {
                 flex-direction: column;
+                margin-right: 32px
             }
             .axis-controls {
                 width: 100%;

@@ -201,6 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
             loadButton.innerHTML = "Add More Files";
             loadButton.disabled = false;
             plotButton.disabled = false;
+            document.getElementById('chartContainer').style.display = 'flex';
             }
     });
 
