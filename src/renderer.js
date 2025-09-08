@@ -84,7 +84,7 @@ function parseChart1(result) {
 const csvFiles = [];
 
 
-async function handleCsv(result) {
+async function handleCsv(result, zipName = null) {
     console.log('Handling CSV:', result.fileName);
     try {
         console.log('Currently loaded files:');
@@ -93,6 +93,10 @@ async function handleCsv(result) {
         if (csvFiles.some(f => f.fileName === result.fileName)) {
             console.warn('File already loaded:', result.fileName);
             return;
+        }
+        let fileName;
+        if (zipName && (!/FH/i.test(result.fileName) && !/PD/i.test(result.fileName))) {
+            fileName = zipName;
         }
 
         if (/FH/i.test(result.fileName) && chartInstance === null) {
@@ -109,7 +113,7 @@ async function handleCsv(result) {
     }
 }
 
-async function handleZip(result) {
+async function handleZip(result, zipName = null) {
     console.log('Handling ZIP:', result.fileName);
     try {
         const csvFiles = [];
@@ -118,13 +122,13 @@ async function handleZip(result) {
         const zipCsv = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.csv'));
         console.log('Found CSV files in ZIP:', zipCsv);
         for (const fileName of zipCsv) {
-            handleCsv({ fileName, data: await zip.files[fileName].async('string') });
+            handleCsv({ fileName, data: await zip.files[fileName].async('string') }, zipName);
         }
 
         const zipNested = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.zip'));
         console.log('Found nested ZIP files in ZIP:', zipNested);
         for (const fileName of zipNested) {
-            handleZip({ fileName, data: await zip.files[fileName].async('arraybuffer') });
+            handleZip({ fileName, data: await zip.files[fileName].async('arraybuffer') }, result.fileName);
         }
 
     } catch (error) {
@@ -320,7 +324,7 @@ function generateChart() {
     ].filter(Boolean);
 
     if (!xColumn || yColumns.length === 0) {
-        return showError('Please select at least X-axis and one Y-axis column');
+        return
     }
 
     // Convert time column into Date objects
