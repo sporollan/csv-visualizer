@@ -38,8 +38,10 @@ function parseChart1(result) {
     const lines = result.data.split(/\r?\n/);
 
     const headerIndex = lines.findIndex(l => l.startsWith('"Time"') || l.startsWith("Time,"));
-    if (headerIndex === -1) throw new Error("Could not find 'Time' header in CSV");
-
+    if (headerIndex === -1) {
+        showError("Could not find 'Time' header in CSV");
+        throw new Error("Could not find 'Time' header in CSV");
+    }
     let dataLines = lines.slice(headerIndex);
 
     dataLines = dataLines.filter(l => {
@@ -92,14 +94,15 @@ async function handleCsv(result) {
             console.warn('File already loaded:', result.fileName);
             return;
         }
-        csvFiles.push(result);
-        updateFileList();
-        populateFileSelector();
+
         if (/FH/i.test(result.fileName) && chartInstance === null) {
             parseChart1(result);
         } else if (/PD/i.test(result.fileName)) {
             parseChart1(result);
         }
+        csvFiles.push(result);
+        updateFileList();
+        populateFileSelector();
     } catch (error) {
         console.error('Error reading CSV file:', error);
         showError('Error reading CSV file: ' + error.message);
@@ -411,8 +414,6 @@ function generateChart() {
 
 
 function showError(msg) {
-    /*
-    document.getElementById('chartInfoError').innerHTML =
+    document.getElementById('loaded-files').innerHTML =
         `<div class="error">${msg}</div>`;
-    */
 }
