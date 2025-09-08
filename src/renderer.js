@@ -1,4 +1,4 @@
-import JSZip from "jszip";
+import JSZip, { file } from "jszip";
 
 console.log("Renderer loaded");
 
@@ -94,10 +94,13 @@ async function handleCsv(result, zipName = null) {
             console.warn('File already loaded:', result.fileName);
             return;
         }
-        let fileName;
         if (zipName && (!/FH/i.test(result.fileName) && !/PD/i.test(result.fileName))) {
-            fileName = zipName;
+            result.fileName = zipName;
+        } else {
+            console.log('Not renaming file from ZIP:', result.fileName);
+            console.log('ZIP name was:', zipName);
         }
+        console.log('After ZIP rename, file name is:', result.fileName);
 
         if (/FH/i.test(result.fileName) && chartInstance === null) {
             parseChart1(result);
@@ -116,13 +119,11 @@ async function handleCsv(result, zipName = null) {
 async function handleZip(result, zipName = null) {
     console.log('Handling ZIP:', result.fileName);
     try {
-        const csvFiles = [];
         const jszip = new JSZip();
         const zip = await jszip.loadAsync(result.data);
         const zipCsv = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.csv'));
-        console.log('Found CSV files in ZIP:', zipCsv);
         for (const fileName of zipCsv) {
-            handleCsv({ fileName, data: await zip.files[fileName].async('string') }, zipName);
+            handleCsv({ fileName, data: await zip.files[fileName].async('string') }, result.fileName);
         }
 
         const zipNested = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.zip'));
