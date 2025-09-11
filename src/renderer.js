@@ -65,6 +65,8 @@ function parseChart1(result) {
         preselectedY.push("Treating Pressure", "Slurry Rate", "Slurry Proppant Conc", "BH Proppant Conc", "Backside Pressure");
     } else if (/PD/i.test(result.fileName)) {
         preselectedY.push("Treating Pressure", "Slurry Rate", "W1 Line Speed", "W1 Depth", "W1 Surface Line Tension");
+    } else {
+        preselectedY.push("Treating Pressure");
     }
 
     populateColumnSelectors(preselectedY);
@@ -102,14 +104,11 @@ async function handleCsv(result, zipName = null) {
         }
         console.log('After ZIP rename, file name is:', result.fileName);
 
-        if (/FH/i.test(result.fileName) && chartInstance === null) {
-            parseChart1(result);
-        } else if (/PD/i.test(result.fileName)) {
-            parseChart1(result);
-        }
+        parseChart1(result);
         csvFiles.push(result);
         updateFileList();
-        populateFileSelector();
+        populateFileSelector(result.fileName);
+
     } catch (error) {
         console.error('Error reading CSV file:', error);
         showError('Error reading CSV file: ' + error.message);
@@ -144,7 +143,6 @@ function arrayBufferToString(buffer) {
 
 async function handleLoadedFile(result) {
     console.log('Handling Loaded:', result.fileName);
-
     try {
         const fileExtension = result.fileName.split('.').pop().toLowerCase();
         if (fileExtension === 'csv') {
@@ -237,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-function populateFileSelector() {
+function populateFileSelector(fileName = null) {
     const sel = document.getElementById('fileSelector');
     sel.innerHTML = '<option value="">...</option>';
     csvFiles.forEach((file, index) => {
@@ -245,6 +243,9 @@ function populateFileSelector() {
         opt.value = index;
         opt.textContent = file.fileName;
         sel.appendChild(opt);
+        if (file.fileName === fileName) {
+            sel.value = index;
+        }
     });
 }
 
