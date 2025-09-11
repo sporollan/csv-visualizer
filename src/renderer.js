@@ -170,34 +170,33 @@ document.addEventListener("DOMContentLoaded", () => {
         loadButton.disabled = true;
 
         try {
-        let result;
+            let result;
 
-        if (isElectron) {
-            // Electron: use IPC bridge
-            result = await window.electronAPI.selectCsvFile();
-        } else {
-            // Web fallback: use <input type="file">
-            const input = document.createElement("input");
-            input.type = "file";
-            input.multiple = true;
-            input.accept = ".zip,.csv";
-            input.click();
+            if (isElectron) {
+                // Electron: use IPC bridge
+                result = await window.electronAPI.selectCsvFile();
+            } else {
+                // Web fallback: use <input type="file">
+                const input = document.createElement("input");
+                input.type = "file";
+                input.multiple = true;
+                input.accept = ".zip,.csv";
+                input.click();
 
-            result = await new Promise((resolve) => {
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return resolve({ success: false, error: "No file selected" });
+                result = await new Promise((resolve) => {
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return resolve({ success: false, error: "No file selected" });
 
-                const arrayBuffer = await file.arrayBuffer();
-                resolve({ success: true, data: arrayBuffer, fileName: file.name });
-            };
-            });
-        }
-        if (result.success) {
-            await handleLoadedFile(result);
-        } else {
-            showError(result.error);
-        }
+                    const arrayBuffer = await file.arrayBuffer();
+                    resolve({ success: true, data: arrayBuffer, fileName: file.name });
+                };
+                input.oncancel = () => resolve({ success: false, error: "File selection cancelled" });
+                });
+            }
+            if (result.success) {
+                await handleLoadedFile(result);
+            }
         } catch (err) {
         showError(err.message);
         } finally {
