@@ -319,6 +319,7 @@ function resetAxis(axisNumber) {
 
 document.getElementById('fileSelector').addEventListener('change', (e) => {
     console.log('File selector changed:', e.target.value);
+    clearChart();
     parseChart1(csvFiles[e.target.value]);
 });
 
