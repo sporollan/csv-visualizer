@@ -37,19 +37,26 @@ function parseChart1(result) {
 
     const lines = result.data.split(/\r?\n/);
 
-    const headerIndex = lines.findIndex(l => l.startsWith('"Time"') || l.startsWith("Time,"));
+    const sampleLine = lines.find(l => l.trim().length > 0);
+    const delimiter = (sampleLine && sampleLine.includes("\t")) ? "\t" : ",";
+
+    const headerIndex = lines.findIndex(
+        l => l.startsWith('"Time"') ||
+             l.startsWith("Time,") ||
+             l.startsWith("AcqTime")
+    );
     if (headerIndex === -1) {
-        showError("Could not find 'Time' header in CSV");
-        throw new Error("Could not find 'Time' header in CSV");
+        showError("Could not find 'Time' header in file");
+        throw new Error("Could not find 'Time' header in file");
     }
     let dataLines = lines.slice(headerIndex);
 
     dataLines = dataLines.filter(l => {
-        if (l.startsWith('"Time"') || l.startsWith("Time,")) return true;
+        if (l.startsWith('"Time"') || l.startsWith("Time,") || l.startsWith("AcqTime")) return true;
 
         if (/,(Event|Stage|Treatment)/i.test(l)) return false;
 
-        return l.split(",").length > 5;
+        return l.split(delimiter).length > 5;
     });
 
     const cleanCSV = dataLines.join("\n");
@@ -57,7 +64,8 @@ function parseChart1(result) {
     csvData = Papa.parse(cleanCSV, {
         header: true,
         dynamicTyping: true,
-        skipEmptyLines: true
+        skipEmptyLines: true,
+        delimiter: delimiter
     });
 
     const preselectedY = [];
@@ -87,6 +95,7 @@ const csvFiles = [];
 
 
 async function handleCsv(result, zipName = null) {
+    clearChart();
     console.log('Handling CSV:', result.fileName);
     try {
         console.log('Currently loaded files:');
@@ -152,6 +161,14 @@ async function handleLoadedFile(result) {
             });
         } else if (fileExtension === 'zip') {
             await handleZip(result);
+        } else if (fileExtension === 'txt') {
+            const lines = arrayBufferToString(result.data).split(/\r?\n/);
+            const normalized = [lines[0], ...lines.slice(3)].join("\n");
+            console.log(normalized);
+            await handleCsv({
+                fileName: result.fileName.replace(/\.txt$/i, ".csv"),
+                data: normalized
+            });
         } else {
             console.warn('Unsupported file type:', fileExtension);
         }
@@ -180,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const input = document.createElement("input");
                 input.type = "file";
                 input.multiple = true;
-                input.accept = ".zip,.csv";
+                input.accept = ".zip,.csv,.txt";
                 input.click();
 
                 result = await new Promise((resolve) => {
@@ -222,16 +239,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const clearChartButton = document.getElementById('clearChart');
 
-    clearChartButton.addEventListener('click', () => {
+    clearChartButton.addEventListener('click', () => clearChart());
+
+});
+
+function clearChart() {
         ['yAxis2', 'yAxis3', 'yAxis4', 'yAxis5'].forEach(id => {
             document.getElementById(id).value = "";
         });
         generateChart();
         document.getElementById('chart-container').style.display = 'none';
-    });
-
-});
-
+    }
 
 
 function populateFileSelector(fileName = null) {
@@ -260,7 +278,7 @@ function populateColumnSelectors(preselectedY) {
             opt.textContent = cleanField;
 
             // Always preselect "Time" for xAxis
-            if (id === "xAxis" && cleanField.toLowerCase() === "time") {
+            if (id === "xAxis" && (cleanField.toLowerCase() === "time" || cleanField.toLowerCase() === "acqtime")) {
                 opt.selected = true;
             }
 
