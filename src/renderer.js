@@ -70,11 +70,26 @@ function parseChart1(result) {
 
     const preselectedY = [];
     if (/FH/i.test(result.fileName)) {
-        preselectedY.push("Treating Pressure", "Slurry Rate", "Slurry Proppant Conc", "BH Proppant Conc", "Backside Pressure");
+        preselectedY.push(
+            ["Treating Pressure", "TR_PRESS"], 
+            ["SLUR_RATE", "Slurry Rate"], 
+            ["Slurry Proppant Conc", "SLURRY_CONC"], 
+            ["BH Proppant Conc"], 
+            ["Backside Pressure", "Casing Pressure"]
+        );
     } else if (/PD/i.test(result.fileName)) {
-        preselectedY.push("Treating Pressure", "Slurry Rate", "W1 Line Speed", "W1 Depth", "W1 Surface Line Tension");
+        preselectedY.push(
+            ["Treating Pressure", "TR_PRESS"], 
+            ["SLUR_RATE", "Slurry Rate"], 
+            ["W1 Line Speed"], 
+            ["W1 Depth"], 
+            ["W1 Surface Line Tension"]
+        );
     } else {
-        preselectedY.push("Treating Pressure");
+        preselectedY.push(
+            ["Treating Pressure", "TR_PRESS"],
+            ["SLUR_RATE", "Slurry Rate"]
+        );
     }
 
     populateColumnSelectors(preselectedY);
@@ -271,21 +286,21 @@ function populateColumnSelectors(preselectedY) {
     selectors.forEach(id => {
         const sel = document.getElementById(id);
         sel.innerHTML = '<option value="">Select column...</option>';
+        
         csvData.meta.fields.forEach(field => {
             const cleanField = field.trim();
             const opt = document.createElement('option');
             opt.value = cleanField;
             opt.textContent = cleanField;
 
-            // Always preselect "Time" for xAxis
             if (id === "xAxis" && (cleanField.toLowerCase() === "time" || cleanField.toLowerCase() === "acqtime")) {
                 opt.selected = true;
             }
 
-            // For yAxisN, use the preselectedY array
             if (id.startsWith("yAxis")) {
                 const yIndex = parseInt(id.replace("yAxis", ""), 10) - 1; // yAxis1 -> index 0
-                if (preselectedY[yIndex] && cleanField.toLowerCase() === preselectedY[yIndex].toLowerCase()) {
+                const aliases = preselectedY[yIndex];
+                if (aliases && aliases.some(a => a.toLowerCase() === cleanField.toLowerCase())) {
                     opt.selected = true;
                 }
             }
@@ -294,6 +309,7 @@ function populateColumnSelectors(preselectedY) {
         });
     });
 }
+
 
 function updateAxis(axisNumber) {
   const minValue = parseFloat(document.getElementById(`y${axisNumber}Min`).value);
