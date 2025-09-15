@@ -149,6 +149,18 @@ async function handleZip(result, zipName = null) {
             handleCsv({ fileName, data: await zip.files[fileName].async('string') }, result.fileName);
         }
 
+        const zipTxt = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.txt'));
+    for (const fileName of zipTxt) {
+        const content = await zip.files[fileName].async('string');
+        const lines = content.split(/\r?\n/);
+        const normalized = [lines[0], ...lines.slice(3)].join("\n");
+        console.log(normalized);
+        handleCsv({
+            fileName,
+            data: normalized
+        });
+    }
+
         const zipNested = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith('.zip'));
         console.log('Found nested ZIP files in ZIP:', zipNested);
         for (const fileName of zipNested) {
