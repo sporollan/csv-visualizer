@@ -271,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function clearChart() {
-        ['yAxis2', 'yAxis3', 'yAxis4', 'yAxis5'].forEach(id => {
+        ['yAxis2', 'yAxis3', 'yAxis4', 'yAxis5', 'yAxis6'].forEach(id => {
             document.getElementById(id).value = "";
         });
         generateChart();
@@ -294,7 +294,7 @@ function populateFileSelector(fileName = null) {
 }
 
 function populateColumnSelectors(preselectedY) {
-    const selectors = ['xAxis', 'yAxis1', 'yAxis2', 'yAxis3', 'yAxis4', 'yAxis5'];
+    const selectors = ['xAxis', 'yAxis1', 'yAxis2', 'yAxis3', 'yAxis4', 'yAxis5', 'yAxis6'];
     selectors.forEach(id => {
         const sel = document.getElementById(id);
         sel.innerHTML = '<option value="">Select column...</option>';
@@ -351,7 +351,7 @@ document.getElementById('fileSelector').addEventListener('change', (e) => {
     parseChart1(csvFiles[e.target.value]);
 });
 
-const axes = [1, 2, 3, 4, 5];
+const axes = [1, 2, 3, 4, 5, 6];
 
 axes.forEach(axisNumber => {
     document.getElementById(`yAxis${axisNumber}`).addEventListener("change", () => generateChart());
@@ -368,7 +368,8 @@ function generateChart() {
         document.getElementById('yAxis2').value,
         document.getElementById('yAxis3').value,
         document.getElementById('yAxis4').value,
-        document.getElementById('yAxis5').value
+        document.getElementById('yAxis5').value,
+        document.getElementById('yAxis6').value
     ].filter(Boolean);
 
     if (!xColumn || yColumns.length === 0) {
