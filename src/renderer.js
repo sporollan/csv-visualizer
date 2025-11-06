@@ -21,7 +21,9 @@ const colors = [
     { border: '#1dc942ff', background: '#1dc942ff' },
     { border: '#a73addff', background: '#a73addff' },
     { border: '#4f0272', background: '#4f0272' },
-    { border: '#ff7f0e', background: '#ff7f0e' }
+    { border: '#ff7f0e', background: '#ff7f0e' },
+    { border: '#38e1ffff', background: '#38e1ffff' }
+
 ];
 
 async function updateFileList() {
@@ -75,7 +77,8 @@ function parseChart1(result) {
             ["SLUR_RATE", "Slurry Rate"], 
             ["Slurry Proppant Conc", "SLURRY_CONC"], 
             ["BH Proppant Conc"], 
-            ["Backside Pressure", "Casing Pressure"]
+            ["FightR LXD Conc"],
+            ["FightR Conc"]
         );
     } else if (/PD/i.test(result.fileName)) {
         preselectedY.push(
