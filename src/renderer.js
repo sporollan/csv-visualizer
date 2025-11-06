@@ -77,8 +77,8 @@ function parseChart1(result) {
             ["SLUR_RATE", "Slurry Rate"], 
             ["Slurry Proppant Conc", "SLURRY_CONC"], 
             ["BH Proppant Conc"], 
-            ["FightR LXD Conc"],
-            ["FightR Conc"]
+            ["FightR LXD Conc", "Fight LXD Conc"],
+            ["FightR Conc", "Fight Conc"]
         );
     } else if (/PD/i.test(result.fileName)) {
         preselectedY.push(
