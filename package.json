@@ -3,11 +3,8 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
     "dev": "vite",
-    "dev:electron": "VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
-    "build:web": "vite build",
-    "dist": "npm run build:web && electron-builder"
+    "build:web": "vite build"
   },
   "devDependencies": {
     "electron": "^25.0.0",
@@ -25,6 +22,10 @@
     }
   },
   "dependencies": {
-    "jszip": "^3.10.1"
+    "chart.js": "^4.5.1",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "chartjs-plugin-zoom": "^2.2.0",
+    "jszip": "^3.10.1",
+    "papaparse": "^5.5.3"
   }
 }
