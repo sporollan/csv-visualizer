@@ -14,7 +14,7 @@ class UIManager {
         document.getElementById("chartInfo").innerHTML = `
         <div class="file-info">
             <strong>📄 ${fileName}</strong><br>
-        </div>`;    
+        </div>`;
     }
 
     populateFileSelector(selectedFileName = null) {
@@ -31,9 +31,9 @@ class UIManager {
         });
     }
 
-    adjustFileSelector(fileName){
+    adjustFileSelector(index){
         const sel = document.getElementById('fileSelector');
-        sel.value = fileName;
+        sel.value = index;
     }
 
     populateColumnSelectors(preselectedY = []) {

@@ -3,7 +3,6 @@ import chartManager from './modules/chartManager.js';
 import uiManager from './modules/uiManager.js';
 import dataStore from './modules/dataStore.js';
 
-console.log("Renderer loaded");
 
 class App {
     constructor() {
@@ -37,12 +36,15 @@ class App {
             if (result.success) {
                 console.log(`Selected file: ${result.fileName}`);
                 await fileHandler.handleLoadedFile(result);
+                const latestFileName = dataStore.csvFiles[dataStore.csvFiles.length - 1].fileName;
                 uiManager.updateFileList();
-                uiManager.populateFileSelector(result.fileName);
-                const preselectedY = fileHandler.getYAxisPresets(result.fileName);
+                uiManager.populateFileSelector(latestFileName);
+                const preselectedY = fileHandler.getYAxisPresets(latestFileName);
                 uiManager.populateColumnSelectors(preselectedY);
-                dataStore.setCurrentSelectionIndex(dataStore.csvFiles.findIndex(f => f.fileName === result.fileName));
                 this.handlePlotChart();
+                uiManager.populateChartName(latestFileName);
+                uiManager.adjustFileSelector(dataStore.csvFiles.length - 1);
+
             }
         } catch (err) {
             uiManager.showError(err.message);
@@ -59,8 +61,6 @@ class App {
         chartManager.clearChart();
         const { xColumn, yColumns } = uiManager.getSelectedColumns();
         chartManager.generateChart(xColumn, yColumns, dataStore.currentCsvData);
-        uiManager.populateChartName(dataStore.getCurrentSelection().fileName);
-        uiManager.adjustFileSelector(dataStore.getCurrentSelectionIndex());
     }
 
     handleClearChart() {
@@ -76,13 +76,14 @@ class App {
 
         const selectedFile = dataStore.csvFiles[selectedIndex];
         if (selectedFile) {
-            // Re-parse the selected file
             console.log('Re-selecting file:', selectedFile.fileName);
             fileHandler.handleCsv(selectedFile)
                 .then(() => {
                     const preselectedY = fileHandler.getYAxisPresets(selectedFile.fileName);
                     uiManager.populateColumnSelectors(preselectedY);
                     this.handlePlotChart();
+                    uiManager.populateChartName(selectedFile.fileName);
+                    uiManager.adjustFileSelector(selectedIndex);
                 })
                 .catch(error => uiManager.showError(error.message));
         }
