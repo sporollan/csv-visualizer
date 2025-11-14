@@ -53,7 +53,7 @@
             display: flex;
             gap: 32px;
             margin-bottom: 32px;
-            margin-right: 224px;
+            margin-right: 0px;
         }
         
         .axis-controls-main-container {
