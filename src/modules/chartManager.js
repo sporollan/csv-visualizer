@@ -2,12 +2,15 @@ import { Chart } from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import 'chartjs-adapter-date-fns';
 import { COLORS } from '../utils/constants.js';
-import dataStore from './dataStore.js';
 
 Chart.register(zoomPlugin);
 
 
 class ChartManager {
+    constructor(dataStore) {
+        this.dataStore = dataStore;
+    }
+
     generateChart(xColumn, yColumns, csvData) {
         if (!xColumn || yColumns.length === 0) return;
 
@@ -15,12 +18,12 @@ class ChartManager {
         const datasets = this.createDatasets(yColumns, csvData, labels);
         const scales = this.createScales(xColumn, yColumns);
 
-        if (dataStore.chartInstance) {
-            dataStore.chartInstance.destroy();
+        if (this.dataStore.chartInstance) {
+            this.dataStore.chartInstance.destroy();
         }
 
         const ctx = document.getElementById('myChart').getContext('2d');
-        dataStore.chartInstance = new Chart(ctx, this.getChartConfig(datasets, scales, xColumn));
+        this.dataStore.chartInstance = new Chart(ctx, this.getChartConfig(datasets, scales, xColumn));
         
         this.showChartContainer();
     }
@@ -113,33 +116,33 @@ class ChartManager {
     }
 
     updateAxis(axisNumber, minValue, maxValue) {
-        if (!dataStore.chartInstance) return;
+        if (!this.dataStore.chartInstance) return;
 
-        const scale = dataStore.chartInstance.options.scales[`y${axisNumber}`];
+        const scale = this.dataStore.chartInstance.options.scales[`y${axisNumber}`];
         scale.min = isNaN(minValue) ? undefined : minValue;
         scale.max = isNaN(maxValue) ? undefined : maxValue;
-        dataStore.chartInstance.update();
+        this.dataStore.chartInstance.update();
     }
 
     resetAxis(axisNumber) {
-        if (!dataStore.chartInstance) return;
+        if (!this.dataStore.chartInstance) return;
 
-        const scale = dataStore.chartInstance.options.scales[`y${axisNumber}`];
+        const scale = this.dataStore.chartInstance.options.scales[`y${axisNumber}`];
         scale.min = undefined;
         scale.max = undefined;
-        dataStore.chartInstance.update();
+        this.dataStore.chartInstance.update();
     }
 
     resetZoom() {
-        if (dataStore.chartInstance) {
-            dataStore.chartInstance.resetZoom();
+        if (this.dataStore.chartInstance) {
+            this.dataStore.chartInstance.resetZoom();
         }
     }
 
     clearChart() {
-        if (dataStore.chartInstance) {
-            dataStore.chartInstance.destroy();
-            dataStore.chartInstance = null;
+        if (this.dataStore.chartInstance) {
+            this.dataStore.chartInstance.destroy();
+            this.dataStore.chartInstance = null;
         }
         this.hideChartContainer();
     }
@@ -155,4 +158,4 @@ class ChartManager {
     }
 }
 
-export default new ChartManager();
+export default ChartManager;

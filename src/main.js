@@ -1,72 +1,96 @@
-import fileHandler from './modules/fileHandler.js';
-import chartManager from './modules/chartManager.js';
-import uiManager from './modules/uiManager.js';
+import FileHandler from './modules/fileHandler.js';
+import ChartManager from './modules/chartManager.js';
+import UiManager from './modules/uiManager.js';
 import dataStore from './modules/dataStore.js';
 
 
 class App {
-    constructor() {
+    constructor(dependencies = {}) {
+        this.dom = dependencies.dom || this.initializeDOM();
+        this.dataStore = dependencies.dataStore || dataStore;
+
+        this.fileHandler = dependencies.fileHandler || new FileHandler(this.dataStore);
+        this.chartManager = dependencies.chartManager || new ChartManager(this.dataStore);
+        this.uiManager = dependencies.uiManager || new UiManager(this.dataStore);
+
         this.initEventListeners();
     }
 
+    initializeDOM() {
+        return {
+            loadFile: document.getElementById("loadFile"),
+            plotChart: document.getElementById("plotChart"),
+            resetZoom: document.getElementById("resetZoom"),
+            clearChart: document.getElementById("clearChart"),
+            fileSelector: document.getElementById("fileSelector"),
+            chartContainer: document.getElementById("chartContainer"),
+            axisControls: this.createAxisControls()
+        }
+    }
+
+    createAxisControls() {
+        const controls = {};
+        [1, 2, 3, 4, 5, 6].forEach(axisNumber => {
+            controls[`yAxis${axisNumber}`] = document.getElementById(`yAxis${axisNumber}`);
+            controls[`y${axisNumber}Min`] = document.getElementById(`y${axisNumber}Min`);
+            controls[`y${axisNumber}Max`] = document.getElementById(`y${axisNumber}Max`);
+            controls[`resetAxis${axisNumber}`] = document.getElementById(`resetAxis${axisNumber}`);
+        });
+        return controls;   
+    }
+
     initEventListeners() {
-        document.getElementById("loadFile").addEventListener("click", () => this.handleLoadFile());
-        
-        document.getElementById("plotChart").addEventListener("click", () => this.handlePlotChart());
-        
-        document.getElementById("resetZoom").addEventListener("click", () => chartManager.resetZoom());
-        
-        document.getElementById("clearChart").addEventListener("click", () => this.handleClearChart());
-        
-        document.getElementById('fileSelector').addEventListener('change', (e) => this.handleFileSelect(e));
+        this.dom.loadFile.addEventListener("click", () => this.handleLoadFile());
+        this.dom.plotChart.addEventListener("click", () => this.handlePlotChart());
+        this.dom.resetZoom.addEventListener("click", () => this.chartManager.resetZoom());
+        this.dom.clearChart.addEventListener("click", () => this.handleClearChart());
+        this.dom.fileSelector.addEventListener('change', (e) => this.handleFileSelect(e));
         
         [1, 2, 3, 4, 5, 6].forEach(axisNumber => {
-            document.getElementById(`yAxis${axisNumber}`).addEventListener("change", () => this.handlePlotChart());
-            document.getElementById(`y${axisNumber}Min`).addEventListener("input", () => this.handleAxisUpdate(axisNumber));
-            document.getElementById(`y${axisNumber}Max`).addEventListener("input", () => this.handleAxisUpdate(axisNumber));
-            document.getElementById(`resetAxis${axisNumber}`).addEventListener("click", () => this.handleAxisReset(axisNumber));
+            this.dom.axisControls[`yAxis${axisNumber}`].addEventListener("change", () => this.handlePlotChart());
+            this.dom.axisControls[`y${axisNumber}Min`].addEventListener("input", () => this.handleAxisUpdate(axisNumber));
+            this.dom.axisControls[`y${axisNumber}Max`].addEventListener("input", () => this.handleAxisUpdate(axisNumber));
+            this.dom.axisControls[`resetAxis${axisNumber}`].addEventListener("click", () => this.handleAxisReset(axisNumber));
         });
     }
 
     async handleLoadFile() {
-        uiManager.setButtonLoading('loadFile', true);
+        this.uiManager.setButtonLoading('loadFile', true);
 
         try {
             const result = await this.selectFileBrowser();
             if (result.success) {
-                console.log(`Selected file: ${result.fileName}`);
-                await fileHandler.handleLoadedFile(result);
-                const latestFileName = dataStore.csvFiles[dataStore.csvFiles.length - 1].fileName;
-                uiManager.updateFileList();
-                uiManager.populateFileSelector(latestFileName);
-                const preselectedY = fileHandler.getYAxisPresets(latestFileName);
-                uiManager.populateColumnSelectors(preselectedY);
+                await this.fileHandler.handleLoadedFile(result);
+                const latestFileName = this.dataStore.csvFiles[this.dataStore.csvFiles.length - 1].fileName;
+                this.uiManager.updateFileList();
+                this.uiManager.populateFileSelector(latestFileName);
+                const preselectedY = this.fileHandler.getYAxisPresets(latestFileName);
+                this.uiManager.populateColumnSelectors(preselectedY);
                 this.handlePlotChart();
-                uiManager.populateChartName(latestFileName);
-                uiManager.adjustFileSelector(dataStore.csvFiles.length - 1);
+                this.uiManager.populateChartName(latestFileName);
+                this.uiManager.adjustFileSelector(this.dataStore.csvFiles.length - 1);
 
             }
         } catch (err) {
-            uiManager.showError(err.message);
+            this.uiManager.showError(err.message);
         } finally {
-            uiManager.setButtonLoading('loadFile', false);
-            document.getElementById('plotChart').disabled = false;
-            document.getElementById('chartContainer').style.display = 'flex';
+            this.uiManager.setButtonLoading('loadFile', false);
+            this.dom.plotChart.disabled = false;
+            this.dom.chartContainer.style.display = 'flex';
         }
     }
 
     handlePlotChart() {
-        if (!dataStore.currentCsvData) return;
-        console.log('Plotting chart with current CSV data');
-        chartManager.clearChart();
-        const { xColumn, yColumns } = uiManager.getSelectedColumns();
-        chartManager.generateChart(xColumn, yColumns, dataStore.currentCsvData);
+        if (!this.dataStore.currentCsvData) return;
+        this.chartManager.clearChart();
+        const { xColumn, yColumns } = this.uiManager.getSelectedColumns();
+        this.chartManager.generateChart(xColumn, yColumns, this.dataStore.currentCsvData);
     }
 
     handleClearChart() {
-        chartManager.clearChart();
-        ['yAxis2', 'yAxis3', 'yAxis4', 'yAxis5', 'yAxis6'].forEach(id => {
-            document.getElementById(id).value = "";
+        this.chartManager.clearChart();
+        [2, 3, 4, 5, 6].forEach(axisNumber => {
+            this.dom.axisControls[`yAxis${axisNumber}`].value = "";
         });
     }
 
@@ -74,29 +98,28 @@ class App {
         const selectedIndex = event.target.value;
         if (selectedIndex === "") return;
 
-        const selectedFile = dataStore.csvFiles[selectedIndex];
+        const selectedFile = this.dataStore.csvFiles[selectedIndex];
         if (selectedFile) {
-            console.log('Re-selecting file:', selectedFile.fileName);
-            fileHandler.handleCsv(selectedFile)
+            this.fileHandler.handleCsv(selectedFile)
                 .then(() => {
-                    const preselectedY = fileHandler.getYAxisPresets(selectedFile.fileName);
-                    uiManager.populateColumnSelectors(preselectedY);
+                    const preselectedY = this.fileHandler.getYAxisPresets(selectedFile.fileName);
+                    this.uiManager.populateColumnSelectors(preselectedY);
                     this.handlePlotChart();
-                    uiManager.populateChartName(selectedFile.fileName);
-                    uiManager.adjustFileSelector(selectedIndex);
+                    this.uiManager.populateChartName(selectedFile.fileName);
+                    this.uiManager.adjustFileSelector(selectedIndex);
                 })
-                .catch(error => uiManager.showError(error.message));
+                .catch(error => this.uiManager.showError(error.message));
         }
     }
 
     handleAxisUpdate(axisNumber) {
-        const { min, max } = uiManager.getAxisLimits(axisNumber);
-        chartManager.updateAxis(axisNumber, min, max);
+        const { min, max } = this.uiManager.getAxisLimits(axisNumber);
+        this.chartManager.updateAxis(axisNumber, min, max);
     }
 
     handleAxisReset(axisNumber) {
-        uiManager.clearAxisInputs(axisNumber);
-        chartManager.resetAxis(axisNumber);
+        this.uiManager.clearAxisInputs(axisNumber);
+        this.chartManager.resetAxis(axisNumber);
     }
 
     selectFileBrowser() {

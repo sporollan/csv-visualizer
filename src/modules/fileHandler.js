@@ -1,15 +1,16 @@
 import Papa from 'papaparse';
 import JSZip from 'jszip';
-import dataStore from "./dataStore.js";
 import { Y_AXIS_PRESETS } from "../utils/constants.js";
 
 class FileHandler {
+    constructor(dataStore) {
+        this.dataStore = dataStore;
+    }
     arrayBufferToString(buffer) {
         return new TextDecoder("utf-8").decode(buffer);
     }
 
     async handleLoadedFile(result) {
-        console.log('Handling Loaded:', result.fileName);
         try {
             const fileExtension = result.fileName.split('.').pop().toLowerCase();
             
@@ -37,7 +38,6 @@ class FileHandler {
     }
 
     async handleZip(result) {
-        console.log('Handling ZIP:', result.fileName);
         try {
             const jszip = new JSZip();
             const zip = await jszip.loadAsync(result.data);
@@ -78,28 +78,18 @@ class FileHandler {
     }
 
     async handleCsv(result, zipName = null) {
-        console.log('Handling CSV:', result.fileName);
-        /*
-        if (dataStore.csvFiles.some(f => f.fileName === result.fileName)) {
-            console.warn('File already loaded:', result.fileName);
-            return;
-        }
-        */
-        // Apply ZIP name if appropriate
         if (zipName && (!/FH/i.test(result.fileName) && !/PD/i.test(result.fileName))) {
             result.fileName = zipName;
         }
 
         const parsedData = this.parseCsv(result);
-        dataStore.setCurrentCsvData(parsedData);
-        dataStore.addCsvFile(result);
+        this.dataStore.setCurrentCsvData(parsedData);
+        this.dataStore.addCsvFile(result);
         
         return parsedData;
     }
 
     parseCsv(result) {
-        console.log('Parsing CSV:', result.fileName);
-
         const lines = result.data.split(/\r?\n/);
         const sampleLine = lines.find(l => l.trim().length > 0);
         const delimiter = (sampleLine && sampleLine.includes("\t")) ? "\t" : ",";
@@ -131,7 +121,6 @@ class FileHandler {
     }
 
     getYAxisPresets(fileName) {
-        console.log('Getting Y-Axis presets for file:', fileName);
         if (/FH/i.test(fileName)) {
             return Y_AXIS_PRESETS.FH;
         } else if (/PD/i.test(fileName)) {
@@ -142,4 +131,4 @@ class FileHandler {
     }
 }
 
-export default new FileHandler();
+export default FileHandler;

@@ -1,10 +1,12 @@
-import dataStore from './dataStore.js';
 
 class UIManager {
+    constructor(dataStore) {
+        this.dataStore = dataStore;
+    }
+
     updateFileList() {
         const loadedFilesDiv = document.getElementById('loaded-files');
-        console.log('Updating loaded files display:', dataStore.csvFiles.map(f => f.fileName));
-        loadedFilesDiv.innerHTML = dataStore.csvFiles.map(f => `
+        loadedFilesDiv.innerHTML = this.dataStore.csvFiles.map(f => `
             <div class="file-info">
                 <strong>📄 ${f.fileName}</strong>
             </div>`).join('');
@@ -20,7 +22,7 @@ class UIManager {
     populateFileSelector(selectedFileName = null) {
         const sel = document.getElementById('fileSelector');
         sel.innerHTML = '<option value="">...</option>';
-        dataStore.csvFiles.forEach((file, index) => {
+        this.dataStore.csvFiles.forEach((file, index) => {
             const opt = document.createElement('option');
             opt.value = index;
             opt.textContent = file.fileName;
@@ -43,7 +45,7 @@ class UIManager {
             const sel = document.getElementById(id);
             sel.innerHTML = '<option value="">Select column...</option>';
             
-            dataStore.currentCsvData.meta.fields.forEach(field => {
+            this.dataStore.currentCsvData.meta.fields.forEach(field => {
                 const cleanField = field.trim();
                 const opt = document.createElement('option');
                 opt.value = cleanField;
@@ -109,4 +111,4 @@ class UIManager {
     }
 }
 
-export default new UIManager();
+export default UIManager;
