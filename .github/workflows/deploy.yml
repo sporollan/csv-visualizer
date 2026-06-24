@@ -36,7 +36,10 @@ jobs:
     needs: test
     # Only run this job on push to main (not on pull requests)
     if: github.event_name == 'push'
-    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -60,7 +63,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          environment:
-            name: github-pages
-            url: ${{ steps.deployment.outputs.page_url }}
