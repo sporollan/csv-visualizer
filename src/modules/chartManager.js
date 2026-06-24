@@ -28,9 +28,22 @@ class ChartManager {
         this.showChartContainer();
     }
 
+    parseDate(value) {
+        const direct = new Date(value);
+        if (!isNaN(direct.getTime())) return direct;
+
+        const match = String(value).match(/^(\d{2}):(\d{2}):(\d{4}):(\d{2}):(\d{2}):(\d{2})$/);
+        if (match) {
+            const [, month, day, year, hour, minute, second] = match;
+            return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+        }
+
+        return direct;
+    }
+
     prepareLabels(csvData, xColumn) {
         if (xColumn.toLowerCase().includes("time")) {
-            return csvData.data.map(row => new Date(row[xColumn]));
+            return csvData.data.map(row => this.parseDate(row[xColumn]));
         }
         return csvData.data.map(row => row[xColumn]);
     }
