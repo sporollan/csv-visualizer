@@ -90,7 +90,7 @@ class FileHandler {
     }
 
     parseCsv(result) {
-        const lines = result.data.split(/\r?\n/);
+        const lines = result.data.replace(/^\uFEFF/, '').split(/\r?\n/);
         const sampleLine = lines.find(l => l.trim().length > 0);
         const delimiter = (sampleLine && sampleLine.includes("\t")) ? "\t" : ",";
 
@@ -104,11 +104,13 @@ class FileHandler {
             throw new Error("Could not find 'Time' header in file");
         }
 
+        const expectedColumns = lines[headerIndex].split(delimiter).length;
+
         let dataLines = lines.slice(headerIndex);
         dataLines = dataLines.filter(l => {
             if (l.startsWith('"Time"') || l.startsWith("Time,") || l.startsWith("AcqTime")) return true;
             if (/,(Event|Stage|Treatment)/i.test(l)) return false;
-            return l.split(delimiter).length > 5;
+            return l.split(delimiter).length >= expectedColumns;
         });
 
         const cleanCSV = dataLines.join("\n");
