@@ -94,11 +94,7 @@ class FileHandler {
         const sampleLine = lines.find(l => l.trim().length > 0);
         const delimiter = (sampleLine && sampleLine.includes("\t")) ? "\t" : ",";
 
-        const headerIndex = lines.findIndex(
-            l => l.startsWith('"Time"') ||
-                 l.startsWith("Time,") ||
-                 l.startsWith("AcqTime")
-        );
+        const headerIndex = lines.findIndex(l => this.isHeaderLine(l, delimiter));
         
         if (headerIndex === -1) {
             throw new Error("Could not find 'Time' header in file");
@@ -108,7 +104,7 @@ class FileHandler {
 
         let dataLines = lines.slice(headerIndex);
         dataLines = dataLines.filter(l => {
-            if (l.startsWith('"Time"') || l.startsWith("Time,") || l.startsWith("AcqTime")) return true;
+            if (this.isHeaderLine(l, delimiter)) return true;
             if (/,(Event|Stage|Treatment)/i.test(l)) return false;
             return l.split(delimiter).length >= expectedColumns;
         });
@@ -120,6 +116,14 @@ class FileHandler {
             skipEmptyLines: true,
             delimiter: delimiter
         });
+    }
+
+    isHeaderLine(line, delimiter) {
+        if (line.startsWith('"Time"') || line.startsWith("Time,") || line.startsWith("AcqTime")) {
+            return true;
+        }
+        return line.split(delimiter)
+            .some(f => f.trim().replace(/^"|"$/g, "").toLowerCase() === "acqtime");
     }
 
     getYAxisPresets(fileName) {
