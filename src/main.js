@@ -1,6 +1,7 @@
 import FileHandler from './modules/fileHandler.js';
 import ChartManager from './modules/chartManager.js';
 import UiManager from './modules/uiManager.js';
+import DataTableManager from './modules/dataTableManager.js';
 import dataStore from './modules/dataStore.js';
 
 
@@ -12,7 +13,10 @@ class App {
         this.fileHandler = dependencies.fileHandler || new FileHandler(this.dataStore);
         this.chartManager = dependencies.chartManager || new ChartManager(this.dataStore);
         this.uiManager = dependencies.uiManager || new UiManager(this.dataStore);
+        this.dataTableManager = dependencies.dataTableManager || new DataTableManager(this.dataStore);
 
+        this.dataTableManager.setColumnsProvider(() => this.uiManager.getSelectedColumns());
+        this.chartManager.setPointClickHandler(rowIndex => this.handlePointClick(rowIndex));
         this.initEventListeners();
     }
 
@@ -22,6 +26,7 @@ class App {
             plotChart: document.getElementById("plotChart"),
             resetZoom: document.getElementById("resetZoom"),
             clearChart: document.getElementById("clearChart"),
+            clearTable: document.getElementById("clearTable"),
             fileSelector: document.getElementById("fileSelector"),
             chartContainer: document.getElementById("chartContainer"),
             axisControls: this.createAxisControls()
@@ -44,6 +49,7 @@ class App {
         this.dom.plotChart.addEventListener("click", () => this.handlePlotChart());
         this.dom.resetZoom.addEventListener("click", () => this.chartManager.resetZoom());
         this.dom.clearChart.addEventListener("click", () => this.handleClearChart());
+        this.dom.clearTable.addEventListener("click", () => this.handleClearTable());
         this.dom.fileSelector.addEventListener('change', (e) => this.handleFileSelect(e));
         
         [1, 2, 3, 4, 5, 6].forEach(axisNumber => {
@@ -85,10 +91,23 @@ class App {
         this.chartManager.clearChart();
         const { xColumn, yColumns } = this.uiManager.getSelectedColumns();
         this.chartManager.generateChart(xColumn, yColumns, this.dataStore.currentCsvData);
+        this.dataTableManager.renderTable();
+        this.chartManager.setSelectedRowIndices(this.dataTableManager.getSelectedRowIndices());
+    }
+
+    handlePointClick(rowIndex) {
+        this.dataTableManager.toggleRow(rowIndex);
+        this.chartManager.setSelectedRowIndices(this.dataTableManager.getSelectedRowIndices());
+    }
+
+    handleClearTable() {
+        this.dataTableManager.clearTable();
+        this.chartManager.setSelectedRowIndices([]);
     }
 
     handleClearChart() {
         this.chartManager.clearChart();
+        this.dataTableManager.clearTable();
         [2, 3, 4, 5, 6].forEach(axisNumber => {
             this.dom.axisControls[`yAxis${axisNumber}`].value = "";
         });
