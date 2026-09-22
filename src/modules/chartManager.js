@@ -9,6 +9,9 @@ Chart.register(zoomPlugin);
 class ChartManager {
     constructor(dataStore) {
         this.dataStore = dataStore;
+        this.pointClickHandler = null;
+        this.pointerDownPosition = null;
+        this.pointerTrackingAttached = false;
     }
 
     generateChart(xColumn, yColumns, csvData) {
@@ -22,10 +25,108 @@ class ChartManager {
             this.dataStore.chartInstance.destroy();
         }
 
+        this.xColumn = xColumn;
+        this.yColumns = yColumns;
+        this.csvData = csvData;
+        this.labels = labels;
+        this.rowIndexByX = this.buildRowIndexMap(labels);
+        this.baseDatasetCount = datasets.length;
+
         const ctx = document.getElementById('myChart').getContext('2d');
         this.dataStore.chartInstance = new Chart(ctx, this.getChartConfig(datasets, scales, xColumn));
-        
+        this.attachCanvasPointerTracking();
+
         this.showChartContainer();
+    }
+
+    setPointClickHandler(handler) {
+        this.pointClickHandler = handler;
+    }
+
+    buildRowIndexMap(labels) {
+        const map = new Map();
+        labels.forEach((label, idx) => {
+            const key = label instanceof Date ? label.getTime() : String(label);
+            if (!map.has(key)) map.set(key, idx);
+        });
+        return map;
+    }
+
+    attachCanvasPointerTracking() {
+        if (this.pointerTrackingAttached) return;
+        const canvas = document.getElementById('myChart');
+        if (!canvas) return;
+        canvas.addEventListener('pointerdown', (e) => {
+            this.pointerDownPosition = { x: e.clientX, y: e.clientY };
+        });
+        this.pointerTrackingAttached = true;
+    }
+
+    isZoomDrag(event) {
+        const native = event && event.native;
+        if (!native || !this.pointerDownPosition) return false;
+        const dx = native.clientX - this.pointerDownPosition.x;
+        const dy = native.clientY - this.pointerDownPosition.y;
+        return Math.sqrt(dx * dx + dy * dy) > 5;
+    }
+
+    handleChartClick(event, elements, chart) {
+        if (typeof this.pointClickHandler !== 'function') return;
+        if (!elements || elements.length === 0) return;
+        if (this.isZoomDrag(event)) return;
+
+        let best = null;
+        let bestDistance = Infinity;
+        elements.forEach(el => {
+            const distance = Math.abs(el.element.y - event.y);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = el;
+            }
+        });
+        if (!best) return;
+
+        const dataset = chart.data.datasets[best.datasetIndex];
+        const point = dataset && dataset.data[best.index];
+        if (!point) return;
+
+        const key = point.x instanceof Date ? point.x.getTime() : String(point.x);
+        const rowIndex = this.rowIndexByX.get(key);
+        if (rowIndex === undefined) return;
+
+        this.pointClickHandler(rowIndex);
+    }
+
+    setSelectedRowIndices(rowIndices) {
+        const chart = this.dataStore.chartInstance;
+        if (!chart || !this.baseDatasetCount) return;
+
+        const hadOverlays = chart.data.datasets.length > this.baseDatasetCount;
+        chart.data.datasets.length = this.baseDatasetCount;
+
+        if (rowIndices.length > 0 && this.csvData) {
+            const overlays = this.yColumns.map((col, j) => {
+                const color = COLORS[j % COLORS.length].border;
+                return {
+                    label: '',
+                    data: rowIndices
+                        .filter(i => i >= 0 && i < this.csvData.data.length)
+                        .map(i => ({ x: this.labels[i], y: parseFloat(this.csvData.data[i][col]) || 0 })),
+                    yAxisID: `y${j + 1}`,
+                    showLine: false,
+                    pointRadius: 4,
+                    pointHoverRadius: 5,
+                    backgroundColor: color,
+                    borderColor: color,
+                    fill: false
+                };
+            });
+            chart.data.datasets.push(...overlays);
+        }
+
+        if (rowIndices.length > 0 || hadOverlays) {
+            chart.update();
+        }
     }
 
     parseDate(value) {
@@ -104,8 +205,13 @@ class ChartManager {
                 animation: false,
                 responsive: true,
                 interaction: { mode: 'index', intersect: false },
+                onClick: (event, elements, chart) => this.handleChartClick(event, elements, chart),
                 plugins: {
-                    legend: { position: 'top' },
+                    legend: {
+                        position: 'top',
+                        labels: { filter: (item) => item.text !== '' }
+                    },
+                    tooltip: { filter: (item) => item.dataset.label !== '' },
                     decimation: { enabled: true, algorithm: 'min-max', samples: 2000 },
                     zoom: {
                         pan: {
@@ -157,6 +263,8 @@ class ChartManager {
             this.dataStore.chartInstance.destroy();
             this.dataStore.chartInstance = null;
         }
+        this.baseDatasetCount = 0;
+        this.rowIndexByX = null;
         this.hideChartContainer();
     }
 
